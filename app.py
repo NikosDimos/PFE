@@ -18,9 +18,9 @@ class_mapping = {
     3: "Le document est une notification sans vice de procédure."
 }
 
-# Fonction pour extraire le texte d'un PDF
-def extract_text_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
+# Fonction pour extraire le texte d'un PDF directement à partir de ses bytes
+def extract_text_from_bytes(pdf_bytes):
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     text = ""
     for page in doc:
         text += page.get_text()
@@ -41,9 +41,9 @@ def predict(text):
     result_message = class_mapping.get(prediction, "Le type de document est inconnu.")
 
     # Obtenir la probabilité pour la classe prédite
-    confidence = probs[0][prediction].item()  # La probabilité de la classe prédite
+    confidence = probs[0][prediction].item()
 
-    return result_message, confidence, probs[0].tolist()  # Retourner également toutes les probabilités
+    return result_message, confidence, probs[0].tolist()
 
 # Route pour afficher la page HTML
 @app.route('/')
@@ -58,12 +58,11 @@ def predict_pdf():
 
     file = request.files['file']
     if file and file.filename.endswith('.pdf'):
-        # Sauvegarder temporairement le fichier
-        pdf_path = './uploaded_file.pdf'
-        file.save(pdf_path)
+        # Lire directement le contenu du fichier PDF en mémoire
+        pdf_bytes = file.read()
 
-        # Extraire le texte du PDF
-        text = extract_text_from_pdf(pdf_path)
+        # Extraire le texte directement depuis les bytes
+        text = extract_text_from_bytes(pdf_bytes)
 
         # Faire la prédiction sur le texte extrait
         result_message, confidence, all_confidences = predict(text)
