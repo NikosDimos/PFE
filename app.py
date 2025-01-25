@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, jsonify
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
-import fitz  # PyMuPDF pour extraire le texte du PDF
+import os
 
 app = Flask(__name__)
 
@@ -17,14 +17,6 @@ class_mapping = {
     2: "Le document est une notification et il y a un vice de procédure.",
     3: "Le document est une notification sans vice de procédure."
 }
-
-# Fonction pour extraire le texte d'un PDF directement à partir de ses bytes
-def extract_text_from_bytes(pdf_bytes):
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
 
 # Fonction pour faire une prédiction sur un texte
 def predict(text):
@@ -50,33 +42,29 @@ def predict(text):
 def index():
     return render_template('index.html')
 
-# Route pour recevoir le fichier PDF et effectuer la prédiction
+# Route pour recevoir le texte extrait et effectuer la prédiction
 @app.route('/predict', methods=['POST'])
-def predict_pdf():
-    if 'file' not in request.files:
-        return jsonify({"error": "Aucun fichier téléchargé."}), 400
+def predict_text():
+    data = request.get_json()
 
-    file = request.files['file']
-    if file and file.filename.endswith('.pdf'):
-        # Lire directement le contenu du fichier PDF en mémoire
-        pdf_bytes = file.read()
+    if not data or 'text' not in data:
+        return jsonify({"error": "Aucun texte reçu."}), 400
 
-        # Extraire le texte directement depuis les bytes
-        text = extract_text_from_bytes(pdf_bytes)
+    text = data['text']
 
-        # Faire la prédiction sur le texte extrait
-        result_message, confidence, all_confidences = predict(text)
+    if not text.strip():
+        return jsonify({"error": "Le texte fourni est vide."}), 400
 
-        # Retourner le message explicite, la probabilité, les autres probabilités et un texte explicatif
-        return jsonify({
-            "result_message": result_message,
-            "confidence": confidence,  # Probabilité pour la classe prédite
-            "all_confidences": all_confidences,  # Probabilités pour toutes les classes
-            "confidence_explanation": "Le score de confiance représente la probabilité que le modèle attribue à la classe prédite. Plus ce score est élevé, plus le modèle est certain de sa prédiction."
-        })
+    # Faire la prédiction sur le texte fourni
+    result_message, confidence, all_confidences = predict(text)
 
-    return jsonify({"error": "Veuillez télécharger un fichier PDF valide."}), 400
-
+    # Retourner le message explicite, la probabilité, les autres probabilités et un texte explicatif
+    return jsonify({
+        "result_message": result_message,
+        "confidence": confidence,  # Probabilité pour la classe prédite
+        "all_confidences": all_confidences,  # Probabilités pour toutes les classes
+        "confidence_explanation": "Le score de confiance représente la probabilité que le modèle attribue à la classe prédite. Plus ce score est élevé, plus le modèle est certain de sa prédiction."
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=True)

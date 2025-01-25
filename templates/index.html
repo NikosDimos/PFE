@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Détection de Vice de Procédure</title>
-    <style>
+<style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -126,6 +126,7 @@
             font-style: italic;
         }
     </style>
+
 </head>
 <body>
     <div class="container">
@@ -133,7 +134,7 @@
             <img src="../static/images/loi.png" alt="Logo" style="max-width: 50px; height: auto; vertical-align: middle;"> JustiScan
         </h1>
         <h2>Détection de vice de procédure</h2>
-        <form id="pdf-form" enctype="multipart/form-data">
+        <form id="pdf-form">
             <label for="file">Téléchargez un fichier PDF :</label>
             <input type="file" id="file" name="file" accept=".pdf" required>
             <button type="button" class="custom-file-btn" id="custom-file-btn">
@@ -144,13 +145,12 @@
         <div id="result" class="result"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
     <script>
-        // Lier le bouton personnalisé à l'input file
         document.getElementById("custom-file-btn").addEventListener("click", function() {
-            document.getElementById("file").click(); // Ouvre la fenêtre de sélection de fichier
+            document.getElementById("file").click();
         });
 
-        // Gestion du bouton "Soumettre"
         document.getElementById("submit-button").addEventListener("click", async function(event) {
             event.preventDefault();
 
@@ -162,13 +162,15 @@
                 return;
             }
 
-            const formData = new FormData();
-            formData.append("file", file);
-
             try {
+                const text = await extractTextFromPDF(file);
+                
                 const response = await fetch("/predict", {
                     method: "POST",
-                    body: formData
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ text })
                 });
 
                 const result = await response.json();
@@ -178,7 +180,7 @@
                 resultDiv.style.display = "block";
 
                 if (result.error) {
-                    resultDiv.innerHTML = `<h2 class="error">Erreur : </h2><p>${result.error}</p>`;
+                    resultDiv.innerHTML = `<h2 class="error">Erreur :</h2><p>${result.error}</p>`;
                 } else {
                     resultDiv.innerHTML = `
                         <h2>Résultat :</h2>
@@ -192,6 +194,20 @@
                 console.error("Erreur :", error);
             }
         });
+
+        async function extractTextFromPDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            const pages = pdfDoc.getPages();
+            let fullText = "";
+
+            for (const page of pages) {
+                fullText += page.getTextContent ? await page.getTextContent() : "";
+            }
+
+            return fullText;
+        }
     </script>
 </body>
 </html>
+
