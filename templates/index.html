@@ -130,12 +130,12 @@
 <body>
     <div class="container">
         <h1>
-            <img src="{{ url_for('static', filename='images/loi.png') }}" alt="Logo" style="max-width: 50px; height: auto; vertical-align: middle;"> JustiScan
+            <img src="../static/images/loi.png" alt="Logo" style="max-width: 50px; height: auto; vertical-align: middle;"> JustiScan
         </h1>
         <h2>Détection de vice de procédure</h2>
         <form id="pdf-form" enctype="multipart/form-data">
             <label for="file">Téléchargez un fichier PDF :</label>
-            <!-- Image utilisée comme bouton pour choisir un fichier -->
+            <img src="../static/images/PdfDrop.png" alt="Logo" style="max-width: 100px; height: auto; vertical-align: middle;">
             <input type="file" id="file" name="file" accept=".pdf" required>
             <button type="button" class="custom-file-btn" id="custom-file-btn"></button>
         </form>
