@@ -20,8 +20,10 @@ class_mapping = {
 
 # Fonction pour faire une prédiction sur un texte
 def predict(text):
+    print("[INFO] Tokenization du texte...")
     inputs = tokenizer(text, return_tensors="pt", padding="max_length", truncation=True, max_length=512)
 
+    print("[INFO] Prédiction en cours...")
     with torch.no_grad():
         outputs = model(**inputs)
 
@@ -35,6 +37,7 @@ def predict(text):
     # Obtenir la probabilité pour la classe prédite
     confidence = probs[0][prediction].item()
 
+    print("[INFO] Prédiction terminée.")
     return result_message, confidence, probs[0].tolist()
 
 # Route pour afficher la page HTML
@@ -45,18 +48,26 @@ def index():
 # Route pour recevoir le texte extrait et effectuer la prédiction
 @app.route('/predict', methods=['POST'])
 def predict_text():
+    print("[INFO] Requête reçue pour une prédiction.")
     data = request.get_json()
 
     if not data or 'text' not in data:
+        print("[ERROR] Aucun texte reçu.")
         return jsonify({"error": "Aucun texte reçu."}), 400
 
     text = data['text']
 
     if not text.strip():
+        print("[ERROR] Texte vide fourni.")
         return jsonify({"error": "Le texte fourni est vide."}), 400
+
+    print("[INFO] Texte reçu. Longueur du texte :", len(text))
 
     # Faire la prédiction sur le texte fourni
     result_message, confidence, all_confidences = predict(text)
+
+    print("[INFO] Résultat de la prédiction :", result_message)
+    print("[INFO] Score de confiance :", confidence)
 
     # Retourner le message explicite, la probabilité, les autres probabilités et un texte explicatif
     return jsonify({
@@ -67,4 +78,5 @@ def predict_text():
     })
 
 if __name__ == "__main__":
+    print("[INFO] Démarrage de l'application Flask...")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=True)
